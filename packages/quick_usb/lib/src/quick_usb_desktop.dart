@@ -15,7 +15,7 @@ late Libusb _libusb;
 class QuickUsbWindows extends _QuickUsbDesktop {
   // For example/.dart_tool/flutter_build/generated_main.dart
   static registerWith() {
-    QuickUsbPlatform.instance = QuickUsbMacos();
+    QuickUsbPlatform.instance = QuickUsbWindows();
     _libusb = Libusb(DynamicLibrary.open('libusb-1.0.23.dll'));
   }
 }
@@ -120,9 +120,11 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
             if (descPtr.ref.iProduct > 0) {
               product = _getStringDescriptorASCII(handle, descPtr.ref.iProduct);
             }
-            if (descPtr.ref.iSerialNumber > 0) {
-              serialNumber =
-                  _getStringDescriptorASCII(handle, descPtr.ref.iSerialNumber);
+	    if (descPtr.ref.bcdDevice > 0) {
+              serialNumber = descPtr.ref.bcdDevice.toString();
+            //if (descPtr.ref.iSerialNumber > 0) {
+            //  serialNumber =
+            //      _getStringDescriptorASCII(handle, descPtr.ref.iSerialNumber);
             }
           }
         }
@@ -187,6 +189,7 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
 
   @override
   Future<UsbConfiguration> getConfiguration(int index) async {
+    var usbConfiguration;
     assert(_devHandle != null, 'Device not open');
 
     var configDescPtrPtr = ffi.calloc<Pointer<libusb_config_descriptor>>();
@@ -197,21 +200,21 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
       if (getConfigDesc != libusb_error.LIBUSB_SUCCESS) {
         throw 'getConfigDesc error: ${_libusb.describeError(getConfigDesc)}';
       }
-
-      var configDescPtr = configDescPtrPtr.value;
-      var usbConfiguration = UsbConfiguration(
-        id: configDescPtr.ref.bConfigurationValue,
-        index: configDescPtr.ref.iConfiguration,
-        interfaces: _iterateInterface(
-                configDescPtr.ref.interface_1, configDescPtr.ref.bNumInterfaces)
-            .toList(),
-      );
-      _libusb.libusb_free_config_descriptor(configDescPtr);
-
-      return usbConfiguration;
+      else {
+        var configDescPtr = configDescPtrPtr.value;
+        usbConfiguration = UsbConfiguration(
+          id: configDescPtr.ref.bConfigurationValue,
+          index: configDescPtr.ref.iConfiguration,
+          interfaces: _iterateInterface(
+              configDescPtr.ref.interface_1, configDescPtr.ref.bNumInterfaces)
+              .toList(),
+        );
+        _libusb.libusb_free_config_descriptor(configDescPtr);
+      }
     } finally {
       ffi.calloc.free(configDescPtrPtr);
     }
+    return usbConfiguration;
   }
 
   Iterable<UsbInterface> _iterateInterface(

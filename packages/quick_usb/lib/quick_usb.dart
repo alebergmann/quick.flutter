@@ -2,14 +2,25 @@ import 'dart:typed_data';
 
 import 'src/common.dart';
 import 'src/quick_usb_platform_interface.dart';
-
+import 'dart:io' show Platform;
 export 'src/common.dart';
 export 'src/quick_usb_android.dart';
 export 'src/quick_usb_desktop.dart';
+import 'src/quick_usb_android.dart';
+import 'src/quick_usb_desktop.dart';
 
 QuickUsbPlatform get _platform => QuickUsbPlatform.instance;
 
 class QuickUsb {
+
+  static initQuickUsbPlatform() {
+    if (Platform.isWindows) {
+      QuickUsbPlatform.instance = QuickUsbWindows();
+    } else if (Platform.isAndroid) {
+      QuickUsbPlatform.instance = QuickUsbAndroid();
+    }
+  }
+
   static Future<bool> init() => _platform.init();
 
   static Future<void> exit() => _platform.exit();

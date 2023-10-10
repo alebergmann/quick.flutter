@@ -1,19 +1,34 @@
 import 'dart:typed_data';
-
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:quick_usb/src/common.dart';
+import 'quick_usb_android.dart';
+import 'quick_usb_desktop.dart';
+import 'dart:io' show Platform;
 
 abstract class QuickUsbPlatform extends PlatformInterface {
   QuickUsbPlatform() : super(token: _token);
 
+  static QuickUsbPlatform? _instance;
+  
   static final Object _token = Object();
 
-  static late QuickUsbPlatform _instance;
+  void initPlatformInstance() {
+
+  }
 
   /// The default instance of [PathProviderPlatform] to use.
   ///
   /// Defaults to [MethodChannelPathProvider].
-  static QuickUsbPlatform get instance => _instance;
+  static QuickUsbPlatform get instance {
+    if (_instance == null) {
+      if (Platform.isWindows) {
+        QuickUsbWindows.registerWith();
+      } else if (Platform.isAndroid) {
+        QuickUsbAndroid.registerWith();
+      }
+    }
+    return _instance!;
+  }
 
   /// Platform-specific plugins should set this with their own platform-specific
   /// class that extends [PathProviderPlatform] when they register themselves.
